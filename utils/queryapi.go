@@ -1,4 +1,4 @@
-package inept
+package utils
 
 import (
 	"database/sql"
@@ -28,4 +28,33 @@ func (b BinaryIterator) Next() (*Binary, bool, error) {
 		return nil, false, nil
 	}
 	return &binary, true, b.db.ScanRows(b.state, &binary)
+}
+
+func WritePackages(component *archive.Component, db *gorm.DB, query *gorm.DB) error {
+	binaries, err := NewBinaryIterator(query)
+	if err != nil {
+		return err
+	}
+
+	for {
+		binary, next, err := binaries.Next()
+		if err != nil {
+			return err
+		}
+
+		if !next {
+			break
+		}
+
+		pkg, err := binary.Package(db)
+		if err != nil {
+			return err
+		}
+
+		if err := component.AddPackage(*pkg); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
