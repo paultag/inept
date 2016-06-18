@@ -5,6 +5,7 @@ import (
 	"github.com/jinzhu/gorm"
 
 	"pault.ag/go/archive"
+	"pault.ag/go/inept"
 )
 
 // Binary Iterator {{{
@@ -25,8 +26,8 @@ type BinaryIterator struct {
 	state *sql.Rows
 }
 
-func (b BinaryIterator) Next() (*Binary, bool, error) {
-	binary := Binary{}
+func (b BinaryIterator) Next() (*inept.Binary, bool, error) {
+	binary := inept.Binary{}
 	if !b.state.Next() {
 		return nil, false, nil
 	}

@@ -6,6 +6,7 @@ import (
 
 	"pault.ag/go/archive"
 	"pault.ag/go/inept"
+	"pault.ag/go/inept/utils"
 
 	"golang.org/x/crypto/openpgp"
 
@@ -59,7 +60,7 @@ func main() {
 			comp, err := archiveSuite.Component(component.Name)
 			ohshit(err)
 
-			if err := inept.WritePackages(
+			if err := utils.WritePackages(
 				comp,
 				db,
 				db.Raw(`

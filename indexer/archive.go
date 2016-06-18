@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/jinzhu/gorm"
@@ -181,9 +182,9 @@ func IndexSuites(db *gorm.DB, a archive.Archive) error {
 	})
 }
 
-func InsertDeb(db *gorm.DB, debFile deb.Deb, location string, size uint64, hashers []*transput.Hasher) (error, *Binary) {
-	binary := Binary{}
-	for _, err := range db.FirstOrCreate(&binary, Binary{
+func InsertDeb(db *gorm.DB, debFile deb.Deb, location string, size uint64, hashers []*transput.Hasher) (error, *inept.Binary) {
+	binary := inept.Binary{}
+	for _, err := range db.FirstOrCreate(&binary, inept.Binary{
 		Name:    debFile.Control.Package,
 		Version: debFile.Control.Version.String(),
 		Arch:    debFile.Control.Architecture.String(),
@@ -205,16 +206,16 @@ func InsertDeb(db *gorm.DB, debFile deb.Deb, location string, size uint64, hashe
 	}
 
 	for key, value := range debControl.Values {
-		mKey := MetadataKey{}
+		mKey := inept.MetadataKey{}
 
-		for _, err := range db.FirstOrCreate(&mKey, MetadataKey{
+		for _, err := range db.FirstOrCreate(&mKey, inept.MetadataKey{
 			Name: key,
 		}).GetErrors() {
 			return err, nil
 		}
 
-		meta := BinaryMetadata{}
-		for _, err := range db.FirstOrCreate(&meta, BinaryMetadata{
+		meta := inept.BinaryMetadata{}
+		for _, err := range db.FirstOrCreate(&meta, inept.BinaryMetadata{
 			BinaryID: binary.ID,
 			KeyID:    mKey.ID,
 		}).GetErrors() {
