@@ -85,3 +85,5 @@ func main() {
 	log.Println("Decrufting")
 	ohshit(infra.Decruft())
 }
+
+// vim: foldmethod=marker

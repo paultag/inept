@@ -2,8 +2,6 @@ package inept
 
 import (
 	"github.com/jinzhu/gorm"
-
-	"pault.ag/go/archive"
 )
 
 func Suites(db *gorm.DB, query *gorm.DB) ([]Suite, error) {
@@ -23,31 +21,4 @@ func Suites(db *gorm.DB, query *gorm.DB) ([]Suite, error) {
 	return suites, nil
 }
 
-func WritePackages(component *archive.Component, db *gorm.DB, query *gorm.DB) error {
-	binaries, err := NewBinaryIterator(query)
-	if err != nil {
-		return err
-	}
-
-	for {
-		binary, next, err := binaries.Next()
-		if err != nil {
-			return err
-		}
-
-		if !next {
-			break
-		}
-
-		pkg, err := binary.Package(db)
-		if err != nil {
-			return err
-		}
-
-		if err := component.AddPackage(*pkg); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
+// vim: foldmethod=marker

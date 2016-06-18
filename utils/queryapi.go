@@ -2,9 +2,12 @@ package utils
 
 import (
 	"database/sql"
-
 	"github.com/jinzhu/gorm"
+
+	"pault.ag/go/archive"
 )
+
+// Binary Iterator {{{
 
 func NewBinaryIterator(query *gorm.DB) (*BinaryIterator, error) {
 	rows, err := query.Rows()
@@ -29,6 +32,10 @@ func (b BinaryIterator) Next() (*Binary, bool, error) {
 	}
 	return &binary, true, b.db.ScanRows(b.state, &binary)
 }
+
+// }}}
+
+// Write Packages {{{
 
 func WritePackages(component *archive.Component, db *gorm.DB, query *gorm.DB) error {
 	binaries, err := NewBinaryIterator(query)
@@ -58,3 +65,7 @@ func WritePackages(component *archive.Component, db *gorm.DB, query *gorm.DB) er
 
 	return nil
 }
+
+// }}}
+
+// vim: foldmethod=marker

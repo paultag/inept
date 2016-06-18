@@ -18,6 +18,8 @@ import (
 
 type Indexer func(dir, file string) error
 
+// Index helper {{{
+
 func Index(archive archive.Archive, i Indexer) error {
 	paths, err := archive.Paths()
 	if err != nil {
@@ -33,6 +35,10 @@ func Index(archive archive.Archive, i Indexer) error {
 
 	return nil
 }
+
+// }}}
+
+// Index Debian .deb files {{{
 
 func IndexDebs(db *gorm.DB, a archive.Archive, hashes []string) error {
 	return Index(a, func(dir, file string) error {
@@ -79,7 +85,7 @@ func IndexDebs(db *gorm.DB, a archive.Archive, hashes []string) error {
 
 		debPath = debPath[len(archivePath)+1:]
 
-		err, _ = inept.InsertDeb(
+		err, _ = InsertDeb(
 			db,
 			*debFile,
 			debPath,
@@ -89,6 +95,10 @@ func IndexDebs(db *gorm.DB, a archive.Archive, hashes []string) error {
 		return err
 	})
 }
+
+// }}}
+
+// Index Suites {{{
 
 func IndexSuites(db *gorm.DB, a archive.Archive) error {
 	return Index(a, func(dir, file string) error {
@@ -170,3 +180,54 @@ func IndexSuites(db *gorm.DB, a archive.Archive) error {
 		return nil
 	})
 }
+
+func InsertDeb(db *gorm.DB, debFile deb.Deb, location string, size uint64, hashers []*transput.Hasher) (error, *Binary) {
+	binary := Binary{}
+	for _, err := range db.FirstOrCreate(&binary, Binary{
+		Name:    debFile.Control.Package,
+		Version: debFile.Control.Version.String(),
+		Arch:    debFile.Control.Architecture.String(),
+	}).GetErrors() {
+		return err, nil
+	}
+
+	binary.Location = location
+	for _, err := range db.Save(&binary).GetErrors() {
+		return err, nil
+	}
+
+	debControl := debFile.Control.Paragraph
+	debControl.Set("Filename", location)
+	debControl.Set("Size", strconv.FormatUint(size, 10))
+
+	for _, hasher := range hashers {
+		debControl.Set(strings.ToUpper(hasher.Name()), fmt.Sprintf("%x", hasher.Sum(nil)))
+	}
+
+	for key, value := range debControl.Values {
+		mKey := MetadataKey{}
+
+		for _, err := range db.FirstOrCreate(&mKey, MetadataKey{
+			Name: key,
+		}).GetErrors() {
+			return err, nil
+		}
+
+		meta := BinaryMetadata{}
+		for _, err := range db.FirstOrCreate(&meta, BinaryMetadata{
+			BinaryID: binary.ID,
+			KeyID:    mKey.ID,
+		}).GetErrors() {
+			return err, nil
+		}
+		meta.Value = value
+		for _, err := range db.Save(&mKey).Save(&meta).GetErrors() {
+			return err, nil
+		}
+	}
+	return nil, &binary
+}
+
+// }}}
+
+// vim: foldmethod=marker
