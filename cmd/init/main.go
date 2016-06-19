@@ -1,9 +1,7 @@
 package main
 
 import (
-	"fmt"
 	"pault.ag/go/archive"
-	"pault.ag/go/inept/indexer"
 	"pault.ag/go/inept/utils"
 
 	"github.com/jinzhu/gorm"
@@ -32,8 +30,7 @@ func main() {
 
 	arch, err := archive.New("/home/paultag/tmp/infra", nil)
 	ohshit(err)
-
-	ohshitdb(utils.Bootstrap(db, arch))
+	ohshit(utils.Bootstrap(db, arch))
 }
 
 // vim: foldmethod=marker

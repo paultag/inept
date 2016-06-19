@@ -86,7 +86,7 @@ func CreateMetadataKeys(db *gorm.DB) *gorm.DB {
 	return db
 }
 
-func Init(db *gorm.DB, arch *archive.Archive) error {
+func Bootstrap(db *gorm.DB, arch *archive.Archive) error {
 	for _, err := range CreateTables(db).GetErrors() {
 		return err
 	}
