@@ -42,10 +42,16 @@ func main() {
 	infra, err := archive.New("./infra/", key)
 	ohshit(err)
 
-	suites, err := inept.Suites(db, db.Table("suites"))
+	suites, err := inept.NewSuiteIterator(db.Table("suites"))
 	ohshit(err)
 
-	for _, suite := range suites {
+	for {
+		suite, next, err := suites.Next()
+		ohshit(err)
+		if !next {
+			break
+		}
+
 		archiveSuite, err := infra.Suite(suite.Name)
 		ohshit(err)
 

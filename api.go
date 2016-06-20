@@ -1,24 +1,36 @@
 package inept
 
 import (
+	"database/sql"
 	"github.com/jinzhu/gorm"
 )
 
-func Suites(db *gorm.DB, query *gorm.DB) ([]Suite, error) {
-	suites := []Suite{}
+// Suite Iterator {{{
+
+func NewSuiteIterator(query *gorm.DB) (*SuiteIterator, error) {
 	rows, err := query.Rows()
 	if err != nil {
-		return suites, err
+		return nil, err
 	}
-
-	for rows.Next() {
-		suite := Suite{}
-		if err := db.ScanRows(rows, &suite); err != nil {
-			return []Suite{}, err
-		}
-		suites = append(suites, suite)
-	}
-	return suites, nil
+	return &SuiteIterator{
+		db:    query,
+		state: rows,
+	}, nil
 }
+
+type SuiteIterator struct {
+	db    *gorm.DB
+	state *sql.Rows
+}
+
+func (b SuiteIterator) Next() (*Suite, bool, error) {
+	suite := Suite{}
+	if !b.state.Next() {
+		return nil, false, nil
+	}
+	return &suite, true, b.db.ScanRows(b.state, &suite)
+}
+
+// }}}
 
 // vim: foldmethod=marker
