@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"pault.ag/go/archive"
-	"pault.ag/go/inept"
 	"pault.ag/go/inept/utils"
 
 	"golang.org/x/crypto/openpgp"
@@ -42,48 +41,13 @@ func main() {
 	infra, err := archive.New("./infra/", key)
 	ohshit(err)
 
-	suites, err := inept.NewSuiteIterator(db.Table("suites"))
+	log.Println("Writing Suites")
+	suites, err := utils.WriteSuites(infra, db, db.Table("suites"))
 	ohshit(err)
 
-	for {
-		suite, next, err := suites.Next()
-		ohshit(err)
-		if !next {
-			break
-		}
-
-		archiveSuite, err := infra.Suite(suite.Name)
-		ohshit(err)
-
-		archiveSuite.Description = suite.Description
-		archiveSuite.Origin = suite.Origin
-		archiveSuite.Version = suite.Version
-
-		components, err := suite.Components(db)
-		ohshit(err)
-
-		for _, component := range components {
-			comp, err := archiveSuite.Component(component.Name)
-			ohshit(err)
-
-			if err := utils.WritePackages(
-				comp,
-				db,
-				db.Raw(`
-			SELECT * FROM
-			binaries
-			LEFT JOIN binary_associations ON
-				binary_associations.binary_id = binaries.id
-			WHERE binary_associations.component_id = ?
-			ORDER BY binaries.name`, component.ID),
-			); err != nil {
-				panic(err)
-			}
-
-		}
-
+	for _, suite := range suites {
 		log.Println("Engrossing")
-		blobs, err := infra.Engross(*archiveSuite)
+		blobs, err := infra.Engross(*suite)
 		ohshit(err)
 		log.Println("Linking")
 		ohshit(infra.Link(blobs))
