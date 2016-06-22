@@ -21,8 +21,9 @@
 package main
 
 import (
-	"log"
 	"os"
+
+	"github.com/urfave/cli"
 
 	"pault.ag/go/archive"
 	"pault.ag/go/inept/utils"
@@ -59,41 +60,93 @@ func getOpenPGPKey(keyid uint64) (*openpgp.Entity, error) {
 	return key, nil
 }
 
-func getSQlDatabase() (*gorm.DB, error) {
-	return gorm.Open("sqlite3", "test.db")
+func getSQlDatabase(path string) (*gorm.DB, error) {
+	return gorm.Open("sqlite3", path)
 
 }
 
-func main() {
-	db, err := getSQlDatabase()
-	ohshit(err)
-
+func Init(arch *archive.Archive, db *gorm.DB) error {
 	ohshitdb(utils.DropTables(db))
-
-	arch, err := archive.New("/home/paultag/tmp/infra", nil)
-	ohshit(err)
 	ohshit(utils.Bootstrap(db, arch))
+	return nil
+}
 
-	key, err := getOpenPGPKey(0xEE07B8B6CB89FDDB)
+func Write(arch *archive.Archive, db *gorm.DB) error {
+	suites, err := utils.WriteSuites(arch, db, db.Table("suites"))
 	ohshit(err)
-
-	infra, err := archive.New("./infra/", key)
-	ohshit(err)
-
-	log.Println("Writing Suites")
-	suites, err := utils.WriteSuites(infra, db, db.Table("suites"))
-	ohshit(err)
-
 	for _, suite := range suites {
-		log.Println("Engrossing")
-		blobs, err := infra.Engross(*suite)
+		blobs, err := arch.Engross(*suite)
 		ohshit(err)
-		log.Println("Linking")
-		ohshit(infra.Link(blobs))
+		ohshit(arch.Link(blobs))
+	}
+	ohshit(arch.Decruft())
+	return nil
+}
+
+func main() {
+	app := cli.NewApp()
+	app.Name = "inept"
+	app.Usage = "be the opposite of apt"
+	app.Version = "0.0.1~alpha1"
+
+	var archivePath string
+	var keyringPath string
+	var databasePath string
+	var keyid uint = 0x00000000
+
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:        "archive",
+			Usage:       "Load Archive from `FILE`",
+			Destination: &archivePath,
+		},
+		cli.StringFlag{
+			Name:        "database",
+			Usage:       "sqlite database to use",
+			Destination: &databasePath,
+		},
+		cli.StringFlag{
+			Name:        "keyring",
+			Usage:       "OpenPGP Keyring to use",
+			Destination: &keyringPath,
+		},
+		cli.UintFlag{
+			Name:        "keyid",
+			Usage:       "OpenPGP Key ID to use",
+			Destination: &keyid,
+		},
 	}
 
-	log.Println("Decrufting")
-	ohshit(infra.Decruft())
+	var db *gorm.DB
+	var targetArchive *archive.Archive
+
+	app.Before = func(c *cli.Context) error {
+		var err error
+		db, err = getSQlDatabase(databasePath)
+		ohshit(err)
+		key, err := getOpenPGPKey(uint64(keyid))
+		ohshit(err)
+		targetArchive, err = archive.New(archivePath, key)
+		ohshit(err)
+		return nil
+	}
+
+	app.Commands = []cli.Command{
+		cli.Command{
+			Name: "init",
+			Action: func(c *cli.Context) error {
+				return Init(targetArchive, db)
+			},
+		},
+		cli.Command{
+			Name: "write",
+			Action: func(c *cli.Context) error {
+				return Write(targetArchive, db)
+			},
+		},
+	}
+
+	app.Run(os.Args)
 }
 
 // vim: foldmethod=marker
