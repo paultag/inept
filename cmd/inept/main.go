@@ -21,8 +21,13 @@
 package main
 
 import (
+	"log"
+	"os"
+
 	"pault.ag/go/archive"
 	"pault.ag/go/inept/utils"
+
+	"golang.org/x/crypto/openpgp"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
@@ -40,17 +45,55 @@ func ohshitdb(db *gorm.DB) {
 	}
 }
 
-func main() {
-	db, err := gorm.Open("sqlite3", "test.db")
+func getOpenPGPKey(keyid uint64) (*openpgp.Entity, error) {
+	fd, err := os.Open("/home/paultag/keyring")
 	if err != nil {
-		panic("failed to connect database")
+		return nil, err
 	}
+	el, err := openpgp.ReadKeyRing(fd)
+	if err != nil {
+		return nil, err
+	}
+	keys := el.KeysById(keyid)
+	key := keys[0].Entity
+	return key, nil
+}
+
+func getSQlDatabase() (*gorm.DB, error) {
+	return gorm.Open("sqlite3", "test.db")
+
+}
+
+func main() {
+	db, err := getSQlDatabase()
+	ohshit(err)
 
 	ohshitdb(utils.DropTables(db))
 
 	arch, err := archive.New("/home/paultag/tmp/infra", nil)
 	ohshit(err)
 	ohshit(utils.Bootstrap(db, arch))
+
+	key, err := getOpenPGPKey(0xEE07B8B6CB89FDDB)
+	ohshit(err)
+
+	infra, err := archive.New("./infra/", key)
+	ohshit(err)
+
+	log.Println("Writing Suites")
+	suites, err := utils.WriteSuites(infra, db, db.Table("suites"))
+	ohshit(err)
+
+	for _, suite := range suites {
+		log.Println("Engrossing")
+		blobs, err := infra.Engross(*suite)
+		ohshit(err)
+		log.Println("Linking")
+		ohshit(infra.Link(blobs))
+	}
+
+	log.Println("Decrufting")
+	ohshit(infra.Decruft())
 }
 
 // vim: foldmethod=marker
