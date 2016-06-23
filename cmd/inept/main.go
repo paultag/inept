@@ -26,6 +26,7 @@ import (
 	"github.com/urfave/cli"
 
 	"pault.ag/go/archive"
+	"pault.ag/go/inept"
 	"pault.ag/go/inept/utils"
 
 	"golang.org/x/crypto/openpgp"
@@ -77,9 +78,9 @@ func Write(repo inept.Repository) error {
 	for _, suite := range suites {
 		blobs, err := repo.Archive.Engross(*suite)
 		ohshit(err)
-		ohshit(arch.Link(blobs))
+		ohshit(repo.Archive.Link(blobs))
 	}
-	ohshit(arch.Decruft())
+	ohshit(repo.Archive.Decruft())
 	return nil
 }
 

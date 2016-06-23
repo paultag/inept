@@ -86,7 +86,7 @@ func (b SuiteIterator) Next() (*inept.Suite, bool, error) {
 
 // Write Suites {{{
 
-func WriteSuites(arch *archive.Archive, db *gorm.DB, query *gorm.DB) ([]*archive.Suite, error) {
+func WriteSuites(repo *inept.Repository, query *gorm.DB) ([]*archive.Suite, error) {
 	ret := []*archive.Suite{}
 
 	suites, err := NewSuiteIterator(query)
@@ -104,7 +104,7 @@ func WriteSuites(arch *archive.Archive, db *gorm.DB, query *gorm.DB) ([]*archive
 			break
 		}
 
-		archiveSuite, err := arch.Suite(suite.Name)
+		archiveSuite, err := repo.Archive.Suite(suite.Name)
 		if err != nil {
 			return []*archive.Suite{}, err
 		}
@@ -113,7 +113,7 @@ func WriteSuites(arch *archive.Archive, db *gorm.DB, query *gorm.DB) ([]*archive
 		archiveSuite.Origin = suite.Origin
 		archiveSuite.Version = suite.Version
 
-		components, err := suite.Components(db)
+		components, err := suite.Components(repo.DB)
 		if err != nil {
 			return []*archive.Suite{}, err
 		}
@@ -126,8 +126,8 @@ func WriteSuites(arch *archive.Archive, db *gorm.DB, query *gorm.DB) ([]*archive
 
 			if err := WritePackages(
 				comp,
-				db,
-				db.Raw(`
+				repo.DB,
+				repo.DB.Raw(`
 			SELECT * FROM
 			binaries
 			LEFT JOIN binary_associations ON
