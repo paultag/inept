@@ -86,7 +86,7 @@ func (b SuiteIterator) Next() (*inept.Suite, bool, error) {
 
 // Write Suites {{{
 
-func WriteSuites(repo *inept.Repository, query *gorm.DB) ([]*archive.Suite, error) {
+func WriteSuites(repo inept.Repository, query *gorm.DB) ([]*archive.Suite, error) {
 	ret := []*archive.Suite{}
 
 	suites, err := NewSuiteIterator(query)
