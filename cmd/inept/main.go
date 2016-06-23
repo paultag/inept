@@ -103,17 +103,17 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:        "database",
-			Usage:       "sqlite database to use",
+			Usage:       "sqlite database `FILE` to use",
 			Destination: &databasePath,
 		},
 		cli.StringFlag{
 			Name:        "keyring",
-			Usage:       "OpenPGP Keyring to use",
+			Usage:       "OpenPGP Keyring `FILE` to use",
 			Destination: &keyringPath,
 		},
 		cli.UintFlag{
 			Name:        "keyid",
-			Usage:       "OpenPGP Key ID to use",
+			Usage:       "OpenPGP `Key` ID to use",
 			Destination: &keyid,
 		},
 	}
