@@ -65,13 +65,13 @@ func getSQlDatabase(path string) (*gorm.DB, error) {
 
 }
 
-func Init(repo Repository) error {
+func Init(repo inept.Repository) error {
 	ohshitdb(utils.DropTables(repo.DB))
 	ohshit(utils.Bootstrap(repo))
 	return nil
 }
 
-func Write(repo Repository) error {
+func Write(repo inept.Repository) error {
 	suites, err := utils.WriteSuites(repo, repo.DB.Table("suites"))
 	ohshit(err)
 	for _, suite := range suites {
@@ -119,7 +119,7 @@ func main() {
 
 	var db *gorm.DB
 	var targetArchive *archive.Archive
-	var repo Repository
+	var repo inept.Repository
 
 	app.Before = func(c *cli.Context) error {
 		var err error
@@ -129,7 +129,7 @@ func main() {
 		ohshit(err)
 		targetArchive, err = archive.New(archivePath, key)
 		ohshit(err)
-		mRepo, err := NewRepository(db, targetArchive)
+		mRepo, err := inept.NewRepository(db, targetArchive)
 		ohshit(err)
 		repo = *mRepo
 		return nil
