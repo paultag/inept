@@ -65,17 +65,17 @@ func getSQlDatabase(path string) (*gorm.DB, error) {
 
 }
 
-func Init(arch *archive.Archive, db *gorm.DB) error {
-	ohshitdb(utils.DropTables(db))
-	ohshit(utils.Bootstrap(db, arch))
+func Init(repo Repository) error {
+	ohshitdb(utils.DropTables(repo.DB))
+	ohshit(utils.Bootstrap(repo))
 	return nil
 }
 
-func Write(arch *archive.Archive, db *gorm.DB) error {
-	suites, err := utils.WriteSuites(arch, db, db.Table("suites"))
+func Write(repo Repository) error {
+	suites, err := utils.WriteSuites(repo, repo.DB.Table("suites"))
 	ohshit(err)
 	for _, suite := range suites {
-		blobs, err := arch.Engross(*suite)
+		blobs, err := repo.Archive.Engross(*suite)
 		ohshit(err)
 		ohshit(arch.Link(blobs))
 	}
@@ -119,6 +119,7 @@ func main() {
 
 	var db *gorm.DB
 	var targetArchive *archive.Archive
+	var repo Repository
 
 	app.Before = func(c *cli.Context) error {
 		var err error
@@ -128,6 +129,9 @@ func main() {
 		ohshit(err)
 		targetArchive, err = archive.New(archivePath, key)
 		ohshit(err)
+		mRepo, err := NewRepository(db, targetArchive)
+		ohshit(err)
+		repo = *mRepo
 		return nil
 	}
 
@@ -135,13 +139,13 @@ func main() {
 		cli.Command{
 			Name: "init",
 			Action: func(c *cli.Context) error {
-				return Init(targetArchive, db)
+				return Init(repo)
 			},
 		},
 		cli.Command{
 			Name: "write",
 			Action: func(c *cli.Context) error {
-				return Write(targetArchive, db)
+				return Write(repo)
 			},
 		},
 	}

@@ -21,7 +21,6 @@
 package utils
 
 import (
-	"pault.ag/go/archive"
 	"pault.ag/go/inept"
 	"pault.ag/go/inept/indexer"
 
@@ -106,16 +105,16 @@ func CreateMetadataKeys(db *gorm.DB) *gorm.DB {
 	return db
 }
 
-func Bootstrap(db *gorm.DB, arch *archive.Archive) error {
-	for _, err := range CreateTables(db).GetErrors() {
+func Bootstrap(repo inept.Repository) error {
+	for _, err := range CreateTables(repo.DB).GetErrors() {
 		return err
 	}
 
-	for _, err := range CreateMetadataKeys(db).GetErrors() {
+	for _, err := range CreateMetadataKeys(repo.DB).GetErrors() {
 		return err
 	}
 
-	if err := indexer.IndexDebs(db, *arch, []string{
+	if err := indexer.IndexDebs(repo.DB, *repo.Archive, []string{
 		"sha256",
 		"sha512",
 		"sha1",
@@ -123,7 +122,7 @@ func Bootstrap(db *gorm.DB, arch *archive.Archive) error {
 		return err
 	}
 
-	if err := indexer.IndexSuites(db, *arch); err != nil {
+	if err := indexer.IndexSuites(repo.DB, *repo.Archive); err != nil {
 		return err
 	}
 
