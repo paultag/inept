@@ -26,6 +26,7 @@ import (
 	"github.com/urfave/cli"
 
 	"pault.ag/go/archive"
+	"pault.ag/go/debian/deb"
 	"pault.ag/go/inept"
 	"pault.ag/go/inept/utils"
 
@@ -64,6 +65,29 @@ func getOpenPGPKey(keyid uint64) (*openpgp.Entity, error) {
 func getSQlDatabase(path string) (*gorm.DB, error) {
 	return gorm.Open("sqlite3", path)
 
+}
+
+func IncludeDebPath(repo inept.Repository, path string) error {
+	fd, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	debFile, err := deb.Load(fd, path)
+	if err != nil {
+		return err
+	}
+	return repo.IncludeDeb(debFile)
+}
+
+func IncludeDeb(repo inept.Repository, c *cli.Context) error {
+	args := c.Args()
+	if len(args) < 1 {
+		return cli.ShowCommandHelp(c, "includedeb")
+	}
+	for _, filePath := range args {
+		ohshit(IncludeDebPath(repo, filePath))
+	}
+	return nil
 }
 
 func Init(repo inept.Repository) error {
@@ -147,6 +171,13 @@ func main() {
 			Name: "write",
 			Action: func(c *cli.Context) error {
 				return Write(repo)
+			},
+		},
+		cli.Command{
+			Name:      "includedeb",
+			ArgsUsage: "[debpath]",
+			Action: func(c *cli.Context) error {
+				return IncludeDeb(repo, c)
 			},
 		},
 	}
