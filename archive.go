@@ -2,6 +2,7 @@ package inept
 
 import (
 	"pault.ag/go/archive"
+	"pault.ag/go/debian/deb"
 
 	"github.com/jinzhu/gorm"
 )
@@ -16,4 +17,9 @@ func NewRepository(db *gorm.DB, arch *archive.Archive) (*Repository, error) {
 		DB:      db,
 		Archive: arch,
 	}, nil
+}
+
+func (repo Repository) IncludeDeb(debFile *deb.Deb) error {
+	_, _, err := repo.Archive.Pool.IncludeDeb(debFile)
+	return err
 }
