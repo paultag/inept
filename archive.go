@@ -21,5 +21,10 @@ func NewRepository(db *gorm.DB, arch *archive.Archive) (*Repository, error) {
 
 func (repo Repository) IncludeDeb(debFile *deb.Deb) error {
 	_, _, err := repo.Archive.Pool.IncludeDeb(debFile)
-	return err
+	if err != nil {
+		return err
+	}
+	return IndexDeb(repo.DB, *repo.Archive, []string{
+		"sha1", "sha256", "sha512",
+	}, debFile)
 }
