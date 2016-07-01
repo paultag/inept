@@ -22,7 +22,6 @@ package utils
 
 import (
 	"pault.ag/go/inept"
-	"pault.ag/go/inept/indexer"
 
 	"github.com/jinzhu/gorm"
 )
@@ -114,7 +113,7 @@ func Bootstrap(repo inept.Repository) error {
 		return err
 	}
 
-	if err := indexer.IndexDebs(repo.DB, *repo.Archive, []string{
+	if err := inept.IndexDebs(repo.DB, *repo.Archive, []string{
 		"sha256",
 		"sha512",
 		"sha1",
@@ -122,7 +121,7 @@ func Bootstrap(repo inept.Repository) error {
 		return err
 	}
 
-	if err := indexer.IndexSuites(repo.DB, *repo.Archive); err != nil {
+	if err := inept.IndexSuites(repo.DB, *repo.Archive); err != nil {
 		return err
 	}
 

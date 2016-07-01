@@ -18,7 +18,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. }}} */
 
-package indexer
+package inept
 
 import (
 	"fmt"
@@ -34,7 +34,6 @@ import (
 	"pault.ag/go/debian/control"
 	"pault.ag/go/debian/deb"
 	"pault.ag/go/debian/transput"
-	"pault.ag/go/inept"
 )
 
 type Indexer func(dir, file string) error
@@ -133,9 +132,9 @@ func IndexSuites(db *gorm.DB, a archive.Archive) error {
 		release := archive.Release{}
 		control.Unmarshal(&release, fd)
 
-		suite := inept.Suite{}
+		suite := Suite{}
 
-		for _, err := range db.FirstOrCreate(&suite, inept.Suite{
+		for _, err := range db.FirstOrCreate(&suite, Suite{
 			Name: release.Suite,
 		}).GetErrors() {
 			return err
@@ -156,8 +155,8 @@ func IndexSuites(db *gorm.DB, a archive.Archive) error {
 			}
 			component := dirs[0]
 
-			comp := inept.Component{}
-			for _, err := range db.FirstOrCreate(&comp, inept.Component{
+			comp := Component{}
+			for _, err := range db.FirstOrCreate(&comp, Component{
 				Name:    component,
 				SuiteID: suite.ID,
 			}).GetErrors() {
@@ -178,7 +177,7 @@ func IndexSuites(db *gorm.DB, a archive.Archive) error {
 					return err
 				}
 
-				bin := inept.Binary{}
+				bin := Binary{}
 				for _, err := range db.First(&bin, "location = ?", pkg.Filename).GetErrors() {
 					return err
 				}
@@ -187,9 +186,9 @@ func IndexSuites(db *gorm.DB, a archive.Archive) error {
 					return err
 				}
 
-				assn := inept.BinaryAssociation{}
+				assn := BinaryAssociation{}
 
-				for _, err := range db.FirstOrCreate(&assn, inept.BinaryAssociation{
+				for _, err := range db.FirstOrCreate(&assn, BinaryAssociation{
 					BinaryID:    bin.ID,
 					ComponentID: comp.ID,
 				}).GetErrors() {
@@ -202,9 +201,9 @@ func IndexSuites(db *gorm.DB, a archive.Archive) error {
 	})
 }
 
-func InsertDeb(db *gorm.DB, debFile deb.Deb, location string, size uint64, hashers []*transput.Hasher) (error, *inept.Binary) {
-	binary := inept.Binary{}
-	for _, err := range db.FirstOrCreate(&binary, inept.Binary{
+func InsertDeb(db *gorm.DB, debFile deb.Deb, location string, size uint64, hashers []*transput.Hasher) (error, *Binary) {
+	binary := Binary{}
+	for _, err := range db.FirstOrCreate(&binary, Binary{
 		Name:    debFile.Control.Package,
 		Version: debFile.Control.Version.String(),
 		Arch:    debFile.Control.Architecture.String(),
@@ -226,16 +225,16 @@ func InsertDeb(db *gorm.DB, debFile deb.Deb, location string, size uint64, hashe
 	}
 
 	for key, value := range debControl.Values {
-		mKey := inept.MetadataKey{}
+		mKey := MetadataKey{}
 
-		for _, err := range db.FirstOrCreate(&mKey, inept.MetadataKey{
+		for _, err := range db.FirstOrCreate(&mKey, MetadataKey{
 			Name: key,
 		}).GetErrors() {
 			return err, nil
 		}
 
-		meta := inept.BinaryMetadata{}
-		for _, err := range db.FirstOrCreate(&meta, inept.BinaryMetadata{
+		meta := BinaryMetadata{}
+		for _, err := range db.FirstOrCreate(&meta, BinaryMetadata{
 			BinaryID: binary.ID,
 			KeyID:    mKey.ID,
 		}).GetErrors() {
