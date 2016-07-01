@@ -60,6 +60,50 @@ func Index(archive archive.Archive, i Indexer) error {
 
 // Index Debian .deb files {{{
 
+func IndexDeb(db *gorm.DB, a archive.Archive, hashes []string, debFile *deb.Deb) error {
+	/* So much SIGH about to go down here */
+	fd, err := os.Open(debFile.Path)
+	if err != nil {
+		return err
+	}
+	fileInfo, err := fd.Stat()
+	if err != nil {
+		return err
+	}
+
+	writers := []io.Writer{}
+	hashers := []*transput.Hasher{}
+
+	for _, hash := range hashes {
+		hasher, err := transput.NewHasher(hash)
+		if err != nil {
+			return err
+		}
+		writers = append(writers, hasher)
+		hashers = append(hashers, hasher)
+	}
+
+	io.Copy(io.MultiWriter(writers...), fd)
+
+	debPath := path.Clean(debFile.Path)
+	archivePath := path.Clean(a.Path())
+
+	if !strings.HasPrefix(debPath, archivePath) {
+		return fmt.Errorf(".deb is outside the Archive root")
+	}
+
+	debPath = debPath[len(archivePath)+1:]
+
+	err, _ = InsertDeb(
+		db,
+		*debFile,
+		debPath,
+		uint64(fileInfo.Size()),
+		hashers,
+	)
+	return err
+}
+
 func IndexDebs(db *gorm.DB, a archive.Archive, hashes []string) error {
 	return Index(a, func(dir, file string) error {
 		if !strings.HasSuffix(file, ".deb") {
@@ -71,48 +115,7 @@ func IndexDebs(db *gorm.DB, a archive.Archive, hashes []string) error {
 			return err
 		}
 		defer closer()
-
-		/* So much SIGH about to go down here */
-		fd, err := os.Open(debFile.Path)
-		if err != nil {
-			return err
-		}
-		fileInfo, err := fd.Stat()
-		if err != nil {
-			return err
-		}
-
-		writers := []io.Writer{}
-		hashers := []*transput.Hasher{}
-
-		for _, hash := range hashes {
-			hasher, err := transput.NewHasher(hash)
-			if err != nil {
-				return err
-			}
-			writers = append(writers, hasher)
-			hashers = append(hashers, hasher)
-		}
-
-		io.Copy(io.MultiWriter(writers...), fd)
-
-		debPath := path.Clean(debFile.Path)
-		archivePath := path.Clean(a.Path())
-
-		if !strings.HasPrefix(debPath, archivePath) {
-			return fmt.Errorf(".deb is outside the Archive root")
-		}
-
-		debPath = debPath[len(archivePath)+1:]
-
-		err, _ = InsertDeb(
-			db,
-			*debFile,
-			debPath,
-			uint64(fileInfo.Size()),
-			hashers,
-		)
-		return err
+		return IndexDeb(db, a, hashes, debFile)
 	})
 }
 
