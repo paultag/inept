@@ -41,7 +41,7 @@ type Indexer func(dir, file string) error
 // Index helper {{{
 
 func Index(archive archive.Archive, i Indexer) error {
-	paths, err := archive.Paths()
+	paths, err := archive.Store.Paths()
 	if err != nil {
 		return err
 	}

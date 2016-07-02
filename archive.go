@@ -27,7 +27,7 @@ func (repo Repository) IncludeDeb(debFile *deb.Deb) error {
 		return err
 	}
 
-	fd, err := repo.Archive.Open(*obj)
+	fd, err := repo.Archive.Store.Open(*obj)
 	if err != nil {
 		return err
 	}
