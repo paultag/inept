@@ -67,14 +67,14 @@ func getSQlDatabase(path string) (*gorm.DB, error) {
 
 }
 
-func IncludeDebPath(repo inept.Repository, path string) error {
+func IncludeDebPath(repo inept.Repository, path string) (*inept.Binary, error) {
 	fd, err := os.Open(path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	debFile, err := deb.Load(fd, path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	return repo.IncludeDeb(debFile)
 }
@@ -85,7 +85,10 @@ func IncludeDeb(repo inept.Repository, c *cli.Context) error {
 		return cli.ShowCommandHelp(c, "includedeb")
 	}
 	for _, filePath := range args {
-		ohshit(IncludeDebPath(repo, filePath))
+		_, err := IncludeDebPath(repo, filePath)
+		if err != nil {
+			panic(err)
+		}
 	}
 	return nil
 }

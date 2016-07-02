@@ -60,15 +60,15 @@ func Index(archive archive.Archive, i Indexer) error {
 
 // Index Debian .deb files {{{
 
-func IndexDeb(db *gorm.DB, a archive.Archive, hashes []string, debFile *deb.Deb) error {
+func IndexDeb(db *gorm.DB, a archive.Archive, hashes []string, debFile *deb.Deb) (*Binary, error) {
 	/* So much SIGH about to go down here */
 	fd, err := os.Open(debFile.Path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	fileInfo, err := fd.Stat()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	writers := []io.Writer{}
@@ -77,7 +77,7 @@ func IndexDeb(db *gorm.DB, a archive.Archive, hashes []string, debFile *deb.Deb)
 	for _, hash := range hashes {
 		hasher, err := transput.NewHasher(hash)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		writers = append(writers, hasher)
 		hashers = append(hashers, hasher)
@@ -89,19 +89,18 @@ func IndexDeb(db *gorm.DB, a archive.Archive, hashes []string, debFile *deb.Deb)
 	archivePath := path.Clean(a.Path())
 
 	if !strings.HasPrefix(debPath, archivePath) {
-		return fmt.Errorf(".deb is outside the Archive root")
+		return nil, fmt.Errorf(".deb is outside the Archive root")
 	}
 
 	debPath = debPath[len(archivePath)+1:]
 
-	err, _ = InsertDeb(
+	return InsertDeb(
 		db,
 		*debFile,
 		debPath,
 		uint64(fileInfo.Size()),
 		hashers,
 	)
-	return err
 }
 
 func IndexDebs(db *gorm.DB, a archive.Archive, hashes []string) error {
@@ -115,7 +114,8 @@ func IndexDebs(db *gorm.DB, a archive.Archive, hashes []string) error {
 			return err
 		}
 		defer closer()
-		return IndexDeb(db, a, hashes, debFile)
+		_, err = IndexDeb(db, a, hashes, debFile)
+		return err
 	})
 }
 
@@ -204,19 +204,19 @@ func IndexSuites(db *gorm.DB, a archive.Archive) error {
 	})
 }
 
-func InsertDeb(db *gorm.DB, debFile deb.Deb, location string, size uint64, hashers []*transput.Hasher) (error, *Binary) {
+func InsertDeb(db *gorm.DB, debFile deb.Deb, location string, size uint64, hashers []*transput.Hasher) (*Binary, error) {
 	binary := Binary{}
 	for _, err := range db.FirstOrCreate(&binary, Binary{
 		Name:    debFile.Control.Package,
 		Version: debFile.Control.Version.String(),
 		Arch:    debFile.Control.Architecture.String(),
 	}).GetErrors() {
-		return err, nil
+		return nil, err
 	}
 
 	binary.Location = location
 	for _, err := range db.Save(&binary).GetErrors() {
-		return err, nil
+		return nil, err
 	}
 
 	debControl := debFile.Control.Paragraph
@@ -233,7 +233,7 @@ func InsertDeb(db *gorm.DB, debFile deb.Deb, location string, size uint64, hashe
 		for _, err := range db.FirstOrCreate(&mKey, MetadataKey{
 			Name: key,
 		}).GetErrors() {
-			return err, nil
+			return nil, err
 		}
 
 		meta := BinaryMetadata{}
@@ -241,14 +241,14 @@ func InsertDeb(db *gorm.DB, debFile deb.Deb, location string, size uint64, hashe
 			BinaryID: binary.ID,
 			KeyID:    mKey.ID,
 		}).GetErrors() {
-			return err, nil
+			return nil, err
 		}
 		meta.Value = value
 		for _, err := range db.Save(&mKey).Save(&meta).GetErrors() {
-			return err, nil
+			return nil, err
 		}
 	}
-	return nil, &binary
+	return &binary, nil
 }
 
 // }}}
