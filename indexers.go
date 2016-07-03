@@ -83,7 +83,10 @@ func IndexDeb(db *gorm.DB, a archive.Archive, hashes []string, debFile *deb.Deb)
 		hashers = append(hashers, hasher)
 	}
 
-	io.Copy(io.MultiWriter(writers...), fd)
+	_, err = io.Copy(io.MultiWriter(writers...), fd)
+	if err != nil {
+		return nil, err
+	}
 
 	debPath := path.Clean(debFile.Path)
 	archivePath := path.Clean(a.Path())
