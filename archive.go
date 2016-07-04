@@ -21,6 +21,13 @@ func NewRepository(db *gorm.DB, arch *archive.Archive) (*Repository, error) {
 	}, nil
 }
 
+func (repo Repository) UnassociateBinary(binaryAssociation *BinaryAssociation) error {
+	for _, err := range repo.DB.Delete(binaryAssociation).GetErrors() {
+		return err
+	}
+	return nil
+}
+
 func (repo Repository) AssociateBinary(binary *Binary, comp *Component) (*BinaryAssociation, error) {
 	assn := BinaryAssociation{}
 	for _, err := range repo.DB.FirstOrCreate(&assn, BinaryAssociation{
