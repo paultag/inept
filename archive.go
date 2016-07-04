@@ -21,6 +21,17 @@ func NewRepository(db *gorm.DB, arch *archive.Archive) (*Repository, error) {
 	}, nil
 }
 
+func (repo Repository) AssociateBinary(binary *Binary, comp *Component) (*BinaryAssociation, error) {
+	assn := BinaryAssociation{}
+	for _, err := range repo.DB.FirstOrCreate(&assn, BinaryAssociation{
+		BinaryID:    binary.ID,
+		ComponentID: comp.ID,
+	}).GetErrors() {
+		return nil, err
+	}
+	return &assn, nil
+}
+
 func (repo Repository) IncludeDeb(debFile *deb.Deb) (*Binary, error) {
 	debPath, obj, err := repo.Archive.Pool.IncludeDeb(debFile)
 	if err != nil {

@@ -121,7 +121,7 @@ func Bootstrap(repo inept.Repository) error {
 		return err
 	}
 
-	if err := inept.IndexSuites(repo.DB, *repo.Archive); err != nil {
+	if err := inept.IndexSuites(repo); err != nil {
 		return err
 	}
 

@@ -126,7 +126,10 @@ func IndexDebs(db *gorm.DB, a archive.Archive, hashes []string) error {
 
 // Index Suites {{{
 
-func IndexSuites(db *gorm.DB, a archive.Archive) error {
+func IndexSuites(repo Repository) error {
+	db := repo.DB
+	a := *repo.Archive
+
 	return Index(a, func(dir, file string) error {
 		if file != "Release" {
 			return nil
@@ -192,17 +195,12 @@ func IndexSuites(db *gorm.DB, a archive.Archive) error {
 					return err
 				}
 
-				assn := BinaryAssociation{}
-
-				for _, err := range db.FirstOrCreate(&assn, BinaryAssociation{
-					BinaryID:    bin.ID,
-					ComponentID: comp.ID,
-				}).GetErrors() {
+				_, err = repo.AssociateBinary(&bin, &comp)
+				if err != nil {
 					return err
 				}
 			}
 		}
-
 		return nil
 	})
 }
