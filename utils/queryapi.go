@@ -46,6 +46,10 @@ type BinaryIterator struct {
 	state *sql.Rows
 }
 
+func (b BinaryIterator) Close() error {
+	return b.state.Close()
+}
+
 func (b BinaryIterator) Next() (*inept.Binary, bool, error) {
 	binary := inept.Binary{}
 	if !b.state.Next() {

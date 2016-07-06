@@ -25,18 +25,17 @@ import (
 	"strings"
 
 	"github.com/jinzhu/gorm"
+
+	"pault.ag/go/inept"
 )
 
 func BinaryStringToIterator(db *gorm.DB, binary string) (*BinaryIterator, error) {
 	els := strings.Split(binary, "/")
-	/* XXX:
-	 * binary
-	 * binary/version
-	 * binary/verison/arch
-	 */
+
 	if len(els) < 1 {
 		return nil, fmt.Errorf("Empty string passed")
 	}
+
 	if len(els) > 3 {
 		return nil, fmt.Errorf("Too many binary qualifiers passed")
 	}
@@ -52,6 +51,23 @@ func BinaryStringToIterator(db *gorm.DB, binary string) (*BinaryIterator, error)
 	}
 
 	return NewBinaryIterator(query)
+}
+
+func ComponentStringToComponent(db *gorm.DB, suite string) (*inept.Component, error) {
+	els := strings.Split(suite, "/")
+	if len(els) != 2 {
+		return nil, fmt.Errorf("Need suites defined as `suite/component`")
+	}
+	ret := inept.Component{}
+	for _, err := range db.Raw(
+		`SELECT * FROM components
+			LEFT JOIN suites ON suites.id = components.suite_id
+			WHERE components.name = ? AND suites.name = ?`,
+		els[1], els[0],
+	).Scan(&ret).GetErrors() {
+		return nil, err
+	}
+	return &ret, nil
 }
 
 // vim: foldmethod=marker

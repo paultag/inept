@@ -86,10 +86,17 @@ func Associate(repo inept.Repository, c *cli.Context) error {
 		return cli.ShowCommandHelp(c, "associate")
 	}
 
+	component, err := utils.ComponentStringToComponent(repo.DB, args[1])
+	if err != nil {
+		return err
+	}
+
 	binaries, err := utils.BinaryStringToIterator(repo.DB, args[0])
 	if err != nil {
 		return err
 	}
+	defer binaries.Close()
+	existingDebs := []*inept.Binary{}
 
 	for {
 		binary, next, err := binaries.Next()
@@ -101,7 +108,19 @@ func Associate(repo inept.Repository, c *cli.Context) error {
 			break
 		}
 
-		fmt.Printf("%s\n", binary)
+		existingDebs = append(existingDebs, binary)
+
+	}
+	binaries.Close()
+	if len(existingDebs) == 0 {
+		return fmt.Errorf("No binaries returned")
+	}
+
+	for _, deb := range existingDebs {
+		fmt.Printf("Associating %s with %s\n", deb.Name, component.Name)
+		if _, err := repo.AssociateBinary(deb, component); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -195,27 +214,31 @@ func main() {
 		cli.Command{
 			Name: "init",
 			Action: func(c *cli.Context) error {
-				return Init(repo)
+				ohshit(Init(repo))
+				return nil
 			},
 		},
 		cli.Command{
 			Name: "write",
 			Action: func(c *cli.Context) error {
-				return Write(repo)
+				ohshit(Write(repo))
+				return nil
 			},
 		},
 		cli.Command{
 			Name:      "includedeb",
 			ArgsUsage: "[debpath]",
 			Action: func(c *cli.Context) error {
-				return IncludeDeb(repo, c)
+				ohshit(IncludeDeb(repo, c))
+				return nil
 			},
 		},
 		cli.Command{
 			Name:      "associate",
 			ArgsUsage: "[binary component]",
 			Action: func(c *cli.Context) error {
-				return Associate(repo, c)
+				ohshit(Associate(repo, c))
+				return nil
 			},
 		},
 	}
