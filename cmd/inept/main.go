@@ -49,8 +49,8 @@ func ohshitdb(db *gorm.DB) {
 	}
 }
 
-func getOpenPGPKey(keyid uint64) (*openpgp.Entity, error) {
-	fd, err := os.Open("/home/paultag/keyring")
+func getOpenPGPKey(keyring string, keyid uint64) (*openpgp.Entity, error) {
+	fd, err := os.Open(keyring)
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +200,7 @@ func main() {
 		var err error
 		db, err = getSQlDatabase(databasePath)
 		ohshit(err)
-		key, err := getOpenPGPKey(uint64(keyid))
+		key, err := getOpenPGPKey(keyringPath, uint64(keyid))
 		ohshit(err)
 		targetArchive, err = archive.New(archivePath, key)
 		ohshit(err)
