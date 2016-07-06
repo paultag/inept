@@ -21,6 +21,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/urfave/cli"
@@ -77,6 +78,33 @@ func IncludeDebPath(repo inept.Repository, path string) (*inept.Binary, error) {
 		return nil, err
 	}
 	return repo.IncludeDeb(debFile)
+}
+
+func Associate(repo inept.Repository, c *cli.Context) error {
+	args := c.Args()
+	if len(args) != 2 {
+		return cli.ShowCommandHelp(c, "associate")
+	}
+
+	binaries, err := utils.BinaryStringToIterator(repo.DB, args[0])
+	if err != nil {
+		return err
+	}
+
+	for {
+		binary, next, err := binaries.Next()
+		if err != nil {
+			return err
+		}
+
+		if !next {
+			break
+		}
+
+		fmt.Printf("%s\n", binary)
+	}
+
+	return nil
 }
 
 func IncludeDeb(repo inept.Repository, c *cli.Context) error {
@@ -181,6 +209,13 @@ func main() {
 			ArgsUsage: "[debpath]",
 			Action: func(c *cli.Context) error {
 				return IncludeDeb(repo, c)
+			},
+		},
+		cli.Command{
+			Name:      "associate",
+			ArgsUsage: "[binary component]",
+			Action: func(c *cli.Context) error {
+				return Associate(repo, c)
 			},
 		},
 	}
