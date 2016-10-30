@@ -164,31 +164,13 @@ func main() {
 	app.Usage = "be the opposite of apt"
 	app.Version = "0.0.1~alpha1"
 
-	var archivePath string
-	var keyringPath string
-	var databasePath string
-	var keyid uint = 0x00000000
+	var configPath string
 
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:        "archive",
-			Usage:       "Load Archive from `FILE`",
-			Destination: &archivePath,
-		},
-		cli.StringFlag{
-			Name:        "database",
-			Usage:       "sqlite database `FILE` to use",
-			Destination: &databasePath,
-		},
-		cli.StringFlag{
-			Name:        "keyring",
-			Usage:       "OpenPGP Keyring `FILE` to use",
-			Destination: &keyringPath,
-		},
-		cli.UintFlag{
-			Name:        "keyid",
-			Usage:       "OpenPGP `Key` ID to use",
-			Destination: &keyid,
+			Name:        "config",
+			Usage:       "Load configuration from `FILE`",
+			Destination: &configPath,
 		},
 	}
 
@@ -197,12 +179,16 @@ func main() {
 	var repo inept.Repository
 
 	app.Before = func(c *cli.Context) error {
-		var err error
-		db, err = getSQlDatabase(databasePath)
+		fd, err := os.Open(configPath)
 		ohshit(err)
-		key, err := getOpenPGPKey(keyringPath, uint64(keyid))
+		config, err := utils.ParseConfiguration(fd)
 		ohshit(err)
-		targetArchive, err = archive.New(archivePath, key)
+
+		db, err = getSQlDatabase(config.Global.Database)
+		ohshit(err)
+		key, err := getOpenPGPKey(config.Global.Keyring, uint64(config.Global.KeyID))
+		ohshit(err)
+		targetArchive, err = archive.New(config.Global.Archive, key)
 		ohshit(err)
 		mRepo, err := inept.NewRepository(db, targetArchive)
 		ohshit(err)
