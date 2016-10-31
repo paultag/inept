@@ -67,6 +67,16 @@ func SyncSuites(db *gorm.DB, suites []SuiteConfig) error {
 		for _, err := range db.Save(&dbSuite).GetErrors() {
 			return err
 		}
+
+		for _, component := range suite.Components {
+			dbComponent := inept.Component{}
+			for _, err := range db.FirstOrCreate(&dbComponent, inept.Component{
+				Name:    component,
+				SuiteID: dbSuite.ID,
+			}).GetErrors() {
+				return err
+			}
+		}
 	}
 	return nil
 }
