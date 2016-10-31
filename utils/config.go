@@ -22,6 +22,7 @@ package utils
 
 import (
 	"io"
+	"strconv"
 
 	"pault.ag/go/debian/control"
 )
@@ -41,7 +42,11 @@ type GlobalConfig struct {
 	Archive  string
 	Database string
 	Keyring  string
-	KeyID    int
+	KeyID    string
+}
+
+func (g GlobalConfig) KeyIDInt() (uint64, error) {
+	return strconv.ParseUint(g.KeyID, 16, 64)
 }
 
 type Configuration struct {

@@ -59,6 +59,12 @@ func getOpenPGPKey(keyring string, keyid uint64) (*openpgp.Entity, error) {
 		return nil, err
 	}
 	keys := el.KeysById(keyid)
+	if len(keys) == 0 {
+		return nil, fmt.Errorf(
+			"No key with the given KeyID (%x) in the Keyring",
+			keyid,
+		)
+	}
 	key := keys[0].Entity
 	return key, nil
 }
@@ -186,7 +192,9 @@ func main() {
 
 		db, err = getSQlDatabase(config.Global.Database)
 		ohshit(err)
-		key, err := getOpenPGPKey(config.Global.Keyring, uint64(config.Global.KeyID))
+		keyID, err := config.Global.KeyIDInt()
+		ohshit(err)
+		key, err := getOpenPGPKey(config.Global.Keyring, keyID)
 		ohshit(err)
 		targetArchive, err = archive.New(config.Global.Archive, key)
 		ohshit(err)
