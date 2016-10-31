@@ -50,6 +50,27 @@ func CreateTables(db *gorm.DB) *gorm.DB {
 	)
 }
 
+func SyncSuites(db *gorm.DB, suites []SuiteConfig) error {
+	for _, suite := range suites {
+
+		dbSuite := inept.Suite{}
+		for _, err := range db.FirstOrCreate(&dbSuite, inept.Suite{
+			Name: suite.Suite,
+		}).GetErrors() {
+			return err
+		}
+
+		dbSuite.Description = suite.Description
+		dbSuite.Origin = suite.Origin
+		dbSuite.Version = suite.Version
+
+		for _, err := range db.Save(&dbSuite).GetErrors() {
+			return err
+		}
+	}
+	return nil
+}
+
 func CreateMetadataKeys(db *gorm.DB) *gorm.DB {
 	for name, order := range map[string]int{
 		"Package":               -2600,

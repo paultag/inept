@@ -146,6 +146,10 @@ func IncludeDeb(repo inept.Repository, c *cli.Context) error {
 	return nil
 }
 
+func Sync(config utils.Configuration, repo inept.Repository) error {
+	return utils.SyncSuites(repo.DB, config.Suites)
+}
+
 func Init(repo inept.Repository) error {
 	ohshitdb(utils.DropTables(repo.DB))
 	ohshit(utils.Bootstrap(repo))
@@ -176,6 +180,7 @@ func main() {
 		cli.StringFlag{
 			Name:        "config",
 			Usage:       "Load configuration from `FILE`",
+			Value:       "config",
 			Destination: &configPath,
 		},
 	}
@@ -183,13 +188,13 @@ func main() {
 	var db *gorm.DB
 	var targetArchive *archive.Archive
 	var repo inept.Repository
+	var config *utils.Configuration
 
 	app.Before = func(c *cli.Context) error {
 		fd, err := os.Open(configPath)
 		ohshit(err)
-		config, err := utils.ParseConfiguration(fd)
+		config, err = utils.ParseConfiguration(fd)
 		ohshit(err)
-
 		db, err = getSQlDatabase(config.Global.Database)
 		ohshit(err)
 		keyID, err := config.Global.KeyIDInt()
@@ -209,6 +214,13 @@ func main() {
 			Name: "init",
 			Action: func(c *cli.Context) error {
 				ohshit(Init(repo))
+				return nil
+			},
+		},
+		cli.Command{
+			Name: "sync",
+			Action: func(c *cli.Context) error {
+				ohshit(Sync(*config, repo))
 				return nil
 			},
 		},

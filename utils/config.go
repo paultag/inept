@@ -33,6 +33,7 @@ type SuiteConfig struct {
 	Suite       string
 	Components  []string `delim:"," strip:"\n \r\t"`
 	Description string
+	Origin      string
 	Version     string
 }
 
