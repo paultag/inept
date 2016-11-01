@@ -40,7 +40,7 @@ func BinaryStringToIterator(db *gorm.DB, binary string) (*BinaryIterator, error)
 		return nil, fmt.Errorf("Too many binary qualifiers passed")
 	}
 
-	query := db.Table("binaries").Where("name = ?", els[0])
+	query := db.Table("binaries").Where("name LIKE ?", els[0])
 
 	if len(els) >= 2 {
 		query = query.Where("version = ?", els[1])
