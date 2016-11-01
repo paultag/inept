@@ -21,12 +21,15 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/urfave/cli"
 
 	"pault.ag/go/archive"
+	"pault.ag/go/debian/control"
 	"pault.ag/go/debian/deb"
 	"pault.ag/go/inept"
 	"pault.ag/go/inept/utils"
@@ -132,6 +135,41 @@ func Associate(repo inept.Repository, c *cli.Context) error {
 	return nil
 }
 
+func IncludeChanges(repo inept.Repository, c *cli.Context) error {
+	args := c.Args()
+	if len(args) < 1 {
+		return cli.ShowCommandHelp(c, "includechanges")
+	}
+	for _, filePath := range args {
+		if err := IncludeChangesPath(repo, filePath); err != nil {
+			panic(err)
+		}
+	}
+	return nil
+}
+
+func IncludeChangesPath(repo inept.Repository, path string) error {
+	fd, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	changes, err := control.ParseChanges(bufio.NewReader(fd), path)
+	if err != nil {
+		return err
+	}
+
+	for _, deb := range changes.AbsFiles() {
+		if !strings.HasSuffix(deb.Filename, ".deb") {
+			continue
+		}
+		if _, err := IncludeDebPath(repo, deb.Filename); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func IncludeDeb(repo inept.Repository, c *cli.Context) error {
 	args := c.Args()
 	if len(args) < 1 {
@@ -214,6 +252,7 @@ func main() {
 			Name: "init",
 			Action: func(c *cli.Context) error {
 				ohshit(Init(repo))
+				ohshit(Sync(*config, repo))
 				return nil
 			},
 		},
@@ -227,6 +266,7 @@ func main() {
 		cli.Command{
 			Name: "write",
 			Action: func(c *cli.Context) error {
+				ohshit(Sync(*config, repo))
 				ohshit(Write(repo))
 				return nil
 			},
@@ -236,6 +276,14 @@ func main() {
 			ArgsUsage: "[debpath]",
 			Action: func(c *cli.Context) error {
 				ohshit(IncludeDeb(repo, c))
+				return nil
+			},
+		},
+		cli.Command{
+			Name:      "includechanges",
+			ArgsUsage: "[changespath]",
+			Action: func(c *cli.Context) error {
+				ohshit(IncludeChanges(repo, c))
 				return nil
 			},
 		},
