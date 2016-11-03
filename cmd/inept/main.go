@@ -158,11 +158,25 @@ func IncludeChangesPath(repo inept.Repository, path string) error {
 		return err
 	}
 
+	distribution := changes.Distribution
+	if !strings.Contains("/", distribution) {
+		distribution = fmt.Sprintf("%s/main", distribution)
+	}
+
+	component, err := utils.ComponentStringToComponent(repo.DB, distribution)
+	if err != nil {
+		return err
+	}
+
 	for _, deb := range changes.AbsFiles() {
 		if !strings.HasSuffix(deb.Filename, ".deb") {
 			continue
 		}
-		if _, err := IncludeDebPath(repo, deb.Filename); err != nil {
+		debEntry, err := IncludeDebPath(repo, deb.Filename)
+		if err != nil {
+			return err
+		}
+		if _, err := repo.AssociateBinary(debEntry, component); err != nil {
 			return err
 		}
 	}
