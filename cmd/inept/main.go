@@ -216,7 +216,7 @@ func Write(repo inept.Repository) error {
 		ohshit(err)
 		ohshit(repo.Archive.Link(blobs))
 	}
-	ohshit(repo.Archive.Decruft())
+	ohshit(repo.Archive.GC())
 	return nil
 }
 
@@ -282,6 +282,13 @@ func main() {
 			Action: func(c *cli.Context) error {
 				ohshit(Sync(*config, repo))
 				ohshit(Write(repo))
+				return nil
+			},
+		},
+		cli.Command{
+			Name: "gc",
+			Action: func(c *cli.Context) error {
+				ohshit(repo.Archive.GC())
 				return nil
 			},
 		},
